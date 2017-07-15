@@ -289,5 +289,3 @@ if __name__ == '__main__':
             cprint('[*] Wrote results to: {}'.format(args.outfile), Color.MSG)
     except KeyboardInterrupt:
         sys.exit(0)
-    finally:
-        pass
