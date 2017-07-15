@@ -48,11 +48,10 @@ Use --remote to specify remote URLs for software to compare (e.g. https://wordpr
 ```
 # python pokey_appmap.py -r "https://wordpress.org/latest.zip" -t https://test.us --only .txt -v
 [*] Argument Summary
- -  Target(s)      : https://test.us
+ -  Target(s)      : https://pokeybill.us, https://pokeybill.com
  -  Source         : None
  -  Remote         : https://wordpress.org/latest.zip
- -  Outfile        : 2017-07-15_20_51_26.json
- -  Filtering      : ['.jpg', '.css', '.png', '.gif']
+ -  Outfile        : 2017-07-15_21_04_11.json
  -  Max Threads    : 2
  -  Verbose        : True
  -  Save           : False
@@ -60,6 +59,7 @@ Use --remote to specify remote URLs for software to compare (e.g. https://wordpr
  -  Include Images : False
  -  No Color       : False
  -  Dry Run        : False
+ -  Find Only      : ['.txt']
 [*] Preparing local template
  -  Pulling source from https://wordpress.org/latest.zip
  -  Writing to /tmp/tmpbatj_25o/latest.zip
