@@ -37,6 +37,7 @@ import os
 import sys
 import requests
 import argparse
+import datetime
 import time
 import tempfile
 import zipfile
@@ -103,20 +104,16 @@ def cli():
         else:
             args.ignore = default_filter
         if args.outfile is None:
-            args.outfile = '{}.json'.format(int(time.time()))
-        try:
-            with open(args.outfile, 'w+') as outfile:
-                pass
-        except OSError as e:
-            print(color_wrap('[*] Error accessing {}: {}'.format(f, e), Color.ERR))
-            sys.exit(1)
-        this.result = {t:{'pass':{}, 'fail':{}} for t in args.target}
+            t_str = datetime.datetime.now().strftime("%Y-%m-%d_%H_%M_%S")
+            args.outfile = '{}.json'.format(t_str)
+        this.result = {urlparse(t).netloc:{'pass':{}, 'fail':{}} for t in args.target}
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-t', '--target', type=str, nargs='*', help='Specify target domain(s)', required=True)
     parser.add_argument('-l', '--local', type=str, help='Specify a local directory to compare')
     parser.add_argument('-r', '--remote', type=str, help='Specify a URL to software for comparison')
     parser.add_argument('--ignore', type=str, nargs='*', help='Specify file extensions to ignore (default = .jpg, .css, .png, .gif)')
+    parser.add_argument('--only', type=str, nargs='*', help='Specify file extensions to grab (overrides --ignore)')
     parser.add_argument('--map-images', action='store_true', help='Disable default image filtering')
     parser.add_argument('-o', '--outfile', type=str, help='Path to output file (default = <epoch timestamp>.json)')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output')
@@ -151,11 +148,9 @@ def display_args():
         msg = '{} {:<15}: {}'.format(pre, key, val)
         cprint(msg, col, True)
 
-def test_url(base_url, local):
+def test_url():
     while not this.web_paths.empty():
-        path = web_paths.get()
-        url = urljoin(base_url, path.replace(local, ''))
-        cprint(' -  Checking {}'.format(url), Color.BLUE, True)
+        url = web_paths.get()
         result = session.get(url)
         verb = False
         if result.status_code == 200:
@@ -176,8 +171,9 @@ def test_url(base_url, local):
             sig = '_X_'
             if not args.showall:
                 verb = True
-        result_q.put((base_url,
-                      path.replace(local, ''),
+        p_url = urlparse(url)
+        result_q.put((p_url.netloc,
+                      p_url.path,
                       result.status_code == 200,
                       result.status_code
                       ))
@@ -225,16 +221,21 @@ def pull_source(url, base_path):
 
 def walk_local(path):
     cprint(' -  Walking local path: {}'.format(path), Color.BLUE, True)
-    nfiles = 0
+    npaths = 0
     for root, dirs, files in os.walk(path):
-        nfiles += len(files)
         for f in files:
-            rmt_path = os.path.join(root, f)
-            if rmt_path.startswith('.'):
-                rmt_path = rmt_path[1:]
-            if os.path.splitext(f)[1] not in args.ignore:
-                this.web_paths.put(rmt_path)
-    cprint(' -  Found {} files in software template'.format(nfiles), Color.BLUE, True)
+            for target in args.target:
+                npaths += 1
+                rmt_path = os.path.join(root, f)
+                if rmt_path.startswith('.'):
+                    rmt_path = rmt_path[1:]
+                if args.only:
+                    if os.path.splitext(f)[1] in args.only:
+                        this.web_paths.put(urljoin(target, rmt_path.replace(path, '')))
+                else:
+                    if os.path.splitext(f)[1] not in args.ignore:
+                        this.web_paths.put(urljoin(target, rmt_path.replace(path, '')))
+    cprint(' -  Added {} paths to work queue'.format(npaths), Color.BLUE, True)
 
 def gather_results():
     count = 0
@@ -255,27 +256,33 @@ if __name__ == '__main__':
         with tempfile.TemporaryDirectory() as this.outdir:
             if args.remote is not None:
                 localpath = os.path.join(os.getcwd(), '.path_templates') if args.save else outdir
+                if not os.path.exists(localpath):
+                    os.mkdir(localpath)
                 localpath = pull_source(args.remote, localpath)
             elif args.local is not None:
                 localpath = args.local
             else:
                 raise ValueError('Invalid arg combo')   # Shouldn't happen
             for target in args.target:
-                walk_local(localpath)   # Refresh the queue each iteration
-                for i in range(args.max_threads):
-                    cprint(' -  Starting thread {}'.format(i+1), Color.BLUE, True)
-                    t = threading.Thread(target=test_url, args=(target, localpath))
-                    if not args.dryrun:
-                        t.start()
+                # Populate the work queue
+                cprint('[*] Processing paths for target {}'.format(target), Color.BLUE, True)
+                walk_local(localpath)
+            for i in range(args.max_threads):
+                cprint(' -  Starting thread {}'.format(i+1), Color.BLUE, True)
+                t = threading.Thread(target=test_url)
                 if not args.dryrun:
-                    while not this.web_paths.empty():
-                        # Let the workors wrap up this round
-                        time.sleep(1)
+                    t.start()
+            if not args.dryrun:
+                while not this.web_paths.empty():
+                    # Let the workors wrap up this round
+                    time.sleep(1)
         cprint('[*] Collecting results...', Color.MSG)
         gather_results()
         if not args.dryrun:
             with open(args.outfile, 'w+') as of:
                 json.dump(result, of, sort_keys=True, indent=2)
-            cprint('[*] Wrote {}'.format(args.outfile), Color.MSG)
+            cprint('[*] Wrote results to: {}'.format(args.outfile), Color.MSG)
     except KeyboardInterrupt:
         sys.exit(0)
+    finally:
+        pass
