@@ -134,7 +134,6 @@ def display_args():
             ('Source', args.local),
             ('Remote', args.remote),
             ('Outfile', args.outfile),
-            ('Filtering', args.ignore),
             ('Max Threads', args.max_threads),
             ('Verbose', args.verbose),
             ('Save', args.save),
@@ -143,6 +142,10 @@ def display_args():
             ('No Color', args.nocolor),
             ('Dry Run', args.dryrun),
             ]
+    if args.only:
+        report_list.append(('Find Only', args.only))
+    else:
+        report_list.append(('Ignoring', args.ignore))
     for item in report_list:
         key, val = item
         msg = '{} {:<15}: {}'.format(pre, key, val)
