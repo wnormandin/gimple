@@ -281,6 +281,8 @@ if __name__ == '__main__':
                     time.sleep(1)
         cprint('[*] Collecting results...', Color.MSG)
         gather_results()
+        while not this.result_q.empty():
+            time.sleep(1)
         if not args.dryrun:
             with open(args.outfile, 'w+') as of:
                 json.dump(result, of, sort_keys=True, indent=2)
