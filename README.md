@@ -72,7 +72,7 @@ Use --remote to specify remote URLs for software to compare (e.g. https://wordpr
 200 [==>] https://test.us/license.txt
 200 [==>] https://test.us/wp-includes/ID3/license.txt
 ...
-503 [_X_] https://test.com/wp-content/themes/twentyseventeen/README.txt
+503 [_X_] https://test.us/wp-content/themes/twentyseventeen/README.txt
 [*] Collecting results...
  -  Gathered 68 results
 [*] Wrote results to: 2017-07-15_20_51_26.json
@@ -107,7 +107,7 @@ gnore .php .html .js .scss --map-images
 200 [==>] https://test.us/license.txt
 200 [==>] https://test.us/wp-content/themes/twentysixteen/style.css
 200 [==>] https://test.us/wp-content/themes/twentysixteen/rtl.css
-200 [==>] https://pokeybill.us/wp-includes/js/tinymce/skins/wordpress/images/embedded.png
+200 [==>] https://test.us/wp-includes/js/tinymce/skins/wordpress/images/embedded.png
 ...
 200 [==>] https://test.us/wp-includes/ID3/license.txt
 [*] Collecting results...
